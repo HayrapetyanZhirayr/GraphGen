@@ -51,7 +51,7 @@ async def extract_kg(
         )
 
         final_result = await llm_client.generate_answer(hint_prompt)
-        logger.info("First result: %s", final_result)
+        logger.debug("First result: %s", final_result)
 
         history = pack_history_conversations(hint_prompt, final_result)
         for loop_index in range(max_loop):
@@ -111,6 +111,7 @@ async def extract_kg(
         desc="[2/4]Extracting entities and relationships from chunks",
         unit="chunk",
         progress_bar=progress_bar,
+        max_concurrency=1024,
     )
 
     nodes = defaultdict(list)

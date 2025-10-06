@@ -16,9 +16,19 @@ async def run_concurrent(
     *,
     desc: str = "processing",
     unit: str = "item",
+    max_concurrency: Optional[int] = None,
     progress_bar: Optional[gr.Progress] = None,
 ) -> List[R]:
-    tasks = [asyncio.create_task(coro_fn(it)) for it in items]
+    # limit concurrency if requested
+    semaphore = asyncio.Semaphore(max_concurrency) if max_concurrency else None
+
+    async def _runner(it: T) -> R:
+        if semaphore is None:
+            return await coro_fn(it)
+        async with semaphore:
+            return await coro_fn(it)
+
+    tasks = [asyncio.create_task(_runner(it)) for it in items]
 
     results = await tqdm_async.gather(*tasks, desc=desc, unit=unit)
 

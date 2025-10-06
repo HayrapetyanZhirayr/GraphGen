@@ -221,14 +221,14 @@ async def traverse_graph_for_aggregated(
                 elif question.startswith("问题："):
                     question = question[len("问题：") :].strip()
 
-                logger.info(
+                logger.debug(
                     "%d nodes and %d edges processed",
                     len(_process_batch[0]),
                     len(_process_batch[1]),
                 )
-                logger.info("Pre-length: %s", pre_length)
-                logger.info("Question: %s", question)
-                logger.info("Answer: %s", context)
+                logger.debug("Pre-length: %s", pre_length)
+                logger.debug("Question: %s", question)
+                logger.debug("Answer: %s", context)
 
                 return {
                     compute_content_hash(context): {

@@ -50,7 +50,7 @@ def main():
     with open(args.config_file, "r", encoding="utf-8") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
-    mode = config["generate"]["mode"]
+    mode = config["generate"]["mode"]  # atomic, aggreagted, multi-hop, etc..
     unique_id = int(time.time())
 
     output_path = os.path.join(working_dir, "data", "graphgen", f"{unique_id}")
@@ -63,11 +63,19 @@ def main():
     logger.info(
         "GraphGen with unique ID %s logging to %s",
         unique_id,
-        os.path.join(working_dir, f"{unique_id}_{mode}.log"),
+        os.path.join(output_path, f"{unique_id}_{mode}.log"),
     )
 
     graph_gen = GraphGen(unique_id=unique_id, working_dir=working_dir)
+    '''
+    At this step inside GraphGen.__post_init__
+        - Tokenizer is initialized
+        - Synthesizer Client is initialized
+        - Trainee Client is initialized
+        - Storages are initialized (docs(KV), chunks(KV), graph(NetworkXStorage), search(KV), rephrase(KV), qa(List))
+    '''
 
+    # KG is created inside graph_gen.insert
     graph_gen.insert(read_config=config["read"], split_config=config["split"])
 
     graph_gen.search(search_config=config["search"])

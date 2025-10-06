@@ -51,8 +51,8 @@ class OpenAIClient(BaseLLMClient):
 
         self.token_usage: list = []
         self.request_limit = request_limit
-        self.rpm = RPM(rpm=1000)
-        self.tpm = TPM(tpm=50000)
+        self.rpm = RPM(rpm=5000)
+        self.tpm = TPM(tpm=500_000)
 
         self.__post_init__()
 
