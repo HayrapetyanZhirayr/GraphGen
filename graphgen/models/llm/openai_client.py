@@ -1,4 +1,5 @@
 import math
+import logging
 from typing import Any, Dict, List, Optional
 
 import openai
@@ -51,8 +52,8 @@ class OpenAIClient(BaseLLMClient):
 
         self.token_usage: list = []
         self.request_limit = request_limit
-        self.rpm = RPM(rpm=5000)
-        self.tpm = TPM(tpm=500_000)
+        self.rpm = RPM(rpm=6_000)
+        self.tpm = TPM(tpm=2_500_000)
 
         self.__post_init__()
 
@@ -106,9 +107,21 @@ class OpenAIClient(BaseLLMClient):
         # Limit max_tokens to 1 to avoid long completions
         kwargs["max_tokens"] = 1
 
-        completion = await self.client.chat.completions.create(  # pylint: disable=E1125
-            model=self.model_name, **kwargs
-        )
+        try:
+            completion = await self.client.chat.completions.create(  # pylint: disable=E1125
+                model=self.model_name, **kwargs
+            )
+        except openai.BadRequestError as err:
+            # Handle context overflow due to oversized max_tokens
+            msg = str(err)
+            if "max_tokens" in msg or "max_completion_tokens" in msg or "maximum context length" in msg:
+                logging.warning(
+                    "openai.BadRequestError due to context overflow in generate_topk_per_token; returning empty list. model=%s", 
+                    self.model_name,
+                )
+                return []
+            else:
+                raise
 
         tokens = get_top_response_tokens(completion)
 
@@ -135,12 +148,25 @@ class OpenAIClient(BaseLLMClient):
         estimated_tokens = prompt_tokens + kwargs["max_tokens"]
 
         if self.request_limit:
-            await self.rpm.wait(silent=True)
-            await self.tpm.wait(estimated_tokens, silent=True)
+            await self.rpm.wait(silent=False)
+            await self.tpm.wait(estimated_tokens, silent=False)
 
-        completion = await self.client.chat.completions.create(  # pylint: disable=E1125
-            model=self.model_name, **kwargs
-        )
+        try:
+            completion = await self.client.chat.completions.create(  # pylint: disable=E1125
+                model=self.model_name, **kwargs
+            )
+        except openai.BadRequestError as err:
+            # Handle context overflow due to oversized max_tokens
+            msg = str(err)
+            if "max_tokens" in msg or "max_completion_tokens" in msg or "maximum context length" in msg:
+                logging.warning(
+                    "openai.BadRequestError due to context overflow in generate_answer; returning empty string. model=%s",
+                    self.model_name,
+                )
+                return ""
+            else:
+                raise
+
         if hasattr(completion, "usage"):
             self.token_usage.append(
                 {
