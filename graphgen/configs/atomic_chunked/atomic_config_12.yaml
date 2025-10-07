@@ -1,5 +1,5 @@
 read:
-  input_file: /workspace/hayrapetyan/get_cfa_book/chunks/cfa_books_chunk_0.jsonl # input file path, support json, jsonl, txt, csv. See resources/input_examples for examples
+  input_file: /workspace/hayrapetyan/get_cfa_book/chunks/cfa_books_chunk_12.jsonl # input file path, support json, jsonl, txt, csv. See resources/input_examples for examples
 split:
   chunk_size: 1024 # chunk size for text splitting
   chunk_overlap: 100 # chunk overlap for text splitting
