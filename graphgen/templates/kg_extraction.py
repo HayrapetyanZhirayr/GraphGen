@@ -6,6 +6,10 @@ TEMPLATE_EN: str = """You are an NLP expert, skilled at analyzing text to extrac
 Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
 Use {language} as output language.
 
+-Important-
+Do not include or repeat any entities, relationships, or keywords from the examples below unless they also appear in the actual “Text” provided in the Real Data section.
+The examples are illustrative only and must not influence your final output beyond what is explicitly present in the Real Data text.
+
 -Steps-
 1. Identify all entities. For each identified entity, extract the following information:
 - entity_name: Name of the entity, use same language as input text. If English, capitalized the name.
