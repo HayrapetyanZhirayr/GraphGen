@@ -1,11 +1,11 @@
 read:
-  input_file: resources/input_examples/txt_demo.txt  # input file path, support json, jsonl, txt. See resources/input_examples for examples
+  input_file: /workspace/hayrapetyan/get_cfa_book/test_cfa_book_cut.jsonl 
 split:
   chunk_size: 1024 # chunk size for text splitting
   chunk_overlap: 100 # chunk overlap for text splitting
 search: # web search configuration
   enabled: false # whether to enable web search
-  search_types: ["google"] # search engine types, support: google, bing, uniprot, wikipedia
+  # search_types: ["google"] # search engine types, support: google, bing, uniprot, wikipedia
 quiz_and_judge: # quiz and test whether the LLM masters the knowledge points
   enabled: false
 partition: # graph partition configuration
@@ -16,4 +16,4 @@ partition: # graph partition configuration
     random_seed: 42
 generate:
   mode: cot # atomic, aggregated, multi_hop, cot
-  data_format: Sharegpt # Alpaca, Sharegpt, ChatML
+  data_format: Alpaca # Alpaca, Sharegpt, ChatML

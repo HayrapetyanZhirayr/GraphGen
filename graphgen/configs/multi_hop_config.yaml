@@ -1,26 +1,24 @@
 read:
-  input_file: resources/input_examples/csv_demo.csv # input file path, support json, jsonl, txt. See resources/input_examples for examples
+  input_file: /workspace/hayrapetyan/get_cfa_book/test_cfa_book_cut.jsonl # input file path, support json, jsonl, txt, csv. See resources/input_examples for examples
 split:
   chunk_size: 1024 # chunk size for text splitting
   chunk_overlap: 100 # chunk overlap for text splitting
 search: # web search configuration
   enabled: false # whether to enable web search
-  search_types: ["google"] # search engine types, support: google, bing, uniprot, wikipedia
 quiz_and_judge: # quiz and test whether the LLM masters the knowledge points
   enabled: false
-  quiz_samples: 2 # number of quiz samples to generate
-  re_judge: false # whether to re-judge the existing quiz samples
 partition: # graph partition configuration
   method: ece # ece is a custom partition method based on comprehension loss
-  method_params:
-    bidirectional: true # whether to traverse the graph in both directions
-    edge_sampling: max_loss # edge sampling strategy, support: random, max_loss, min_loss
-    expand_method: max_width # expand method, support: max_width, max_depth
+  method_params:  # traverse strategy
+    bidirectional: true  # whether to traverse the graph in both directions
+    edge_sampling: random  # edge sampling strategy, support: random, max_loss, min_loss # sorting new candidate edges
     isolated_node_strategy: ignore # strategy for isolated nodes, support: ignore, add
-    max_depth: 1 # maximum depth for graph traversal
-    max_extra_edges: 2 # max edges per direction (if expand_method="max_width")
-    max_tokens: 256 # restricts input length (if expand_method="max_tokens")
-    loss_strategy: only_edge # defines loss computation focus, support: only_edge, both
+    expand_method: max_tokens # expand method, support: max_width, max_tokens
+    max_tokens: 512 # restricts input length (if expand_method="max_tokens")
+    max_depth: 10 # maximum depth for graph traversal; applies in pair with max_tokens or max_extra_edges
+    # max_extra_edges: 2 # max edges in subgraph - 1
+    loss_strategy: only_edge # defines loss computation focus, support: only_edge, both (does not play role if edge_sampling: random)
+    # if both: loss = src.loss + tgt.loss + edge.loss else loss = edge.loss
 generate:
   mode: multi_hop # strategy for generating multi-hop QA pairs
-  data_format: ChatML # Alpaca, Sharegpt, ChatML
+  data_format: Alpaca # Alpaca, Sharegpt, ChatML
