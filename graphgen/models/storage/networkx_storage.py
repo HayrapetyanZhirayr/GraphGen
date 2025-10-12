@@ -100,6 +100,7 @@ class NetworkXStorage(BaseGraphStorage):
         return self._graph.has_edge(source_node_id, target_node_id)
 
     async def get_node(self, node_id: str) -> Union[dict, None]:
+        # returns node attributes
         return self._graph.nodes.get(node_id)
 
     async def get_all_nodes(self) -> Union[list[dict], None]:

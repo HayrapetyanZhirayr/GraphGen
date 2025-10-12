@@ -22,6 +22,7 @@ async def _pre_tokenize(
 
     async def handle_edge(edge: tuple) -> tuple:
         async with sem:
+            # edge = (u_of_edge, v_of_edge, **attr)
             if "length" not in edge[2]:
                 edge[2]["length"] = len(
                     await asyncio.get_event_loop().run_in_executor(
@@ -381,6 +382,7 @@ async def traverse_graph_for_atomic(
     edges = list(await graph_storage.get_all_edges())
     nodes = list(await graph_storage.get_all_nodes())
 
+    # this just ensures that len: len(tokenizer.encode(description)) is pre_computed
     edges, nodes = await _pre_tokenize(graph_storage, tokenizer, edges, nodes)
 
     tasks = []
@@ -423,7 +425,7 @@ async def traverse_graph_for_multi_hop(
     llm_client: OpenAIClient,
     tokenizer: Tokenizer,
     graph_storage: NetworkXStorage,
-    traverse_strategy: Dict,
+    traverse_strategy: Dict,  # method_params in config
     text_chunks_storage: JsonKVStorage,
     progress_bar: gr.Progress = None,
     max_concurrent: int = 1000,
@@ -444,13 +446,18 @@ async def traverse_graph_for_multi_hop(
 
     results = {}
     edges = list(await graph_storage.get_all_edges())
+    # edges = [(NODE1_ID, NODE2_ID, {"source_id":"chunk-...<SEP>chunk-", "description":"...<SEP>...", "length":num_tokens}), ...]
     nodes = list(await graph_storage.get_all_nodes())
+    # nodes = [(NODE_ID, {"entity_type": "..", ""source_id":"chunk-...<SEP>chunk-", "description":"...<SEP>...", "length":num_tokens}), ...]
 
+    # adds description lengths in tokens to edges and nodes
     edges, nodes = await _pre_tokenize(graph_storage, tokenizer, edges, nodes)
 
     processing_batches = await get_batches_with_strategy(
         nodes, edges, graph_storage, traverse_strategy
     )
+    # processing_batches = [([node0, node1], [edge1, edge2]), ([..], [..]), ..]
+    # processing_batches is a subgraph (community)
 
     async def _process_single_batch(_process_batch: tuple) -> dict:
         async with semaphore:
@@ -468,21 +475,36 @@ async def traverse_graph_for_multi_hop(
                     f"{_process_node['node_id']}: {_process_node['description']}"
                     for _process_node in _process_nodes
                 ]
+                # entities = ["node1_id:descr1<SEP>descr2", ...]
 
                 relations = [
                     f"{_process_edge[0]} -- {_process_edge[1]}: {_process_edge[2]['description']}"
                     for _process_edge in _process_edges
                 ]
+                # relations = ["node1_id -- node2_id: descr1<SEP>descr2", ...]; descr here is for edge
+
 
                 entities_str = "\n".join(
                     [f"{index + 1}. {entity}" for index, entity in enumerate(entities)]
                 )
+                '''
+                entities_str = 
+                1. node1_id:descr1<SEP>descr2
+                2. node2_id:descr1<SEP>descr2
+                ...
+                '''
                 relations_str = "\n".join(
                     [
                         f"{index + 1}. {relation}"
                         for index, relation in enumerate(relations)
                     ]
                 )
+                '''
+                relations_str = 
+                1. node1_id -- node2_id: descr1<SEP>descr2
+                2. node1_id -- node2_id: descr1<SEP>descr2
+                ...
+                '''
 
                 prompt = MULTI_HOP_GENERATION_PROMPT[language].format(
                     entities=entities_str, relationships=relations_str

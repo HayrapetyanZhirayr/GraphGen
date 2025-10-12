@@ -55,6 +55,7 @@ def _get_level_n_edges_by_max_width(
     level_n_edges = []
 
     start_nodes = {tgt_id} if not bidirectional else {src_id, tgt_id}
+    # start_nodes = [src_id: str, tgt_id: str]
 
     while max_depth > 0 and max_extra_edges > 0:
         max_depth -= 1
@@ -65,6 +66,7 @@ def _get_level_n_edges_by_max_width(
             for edge_id in edge_adj_list[node]
             if not edges[edge_id][2].get("visited", False)
         ]
+        # candidate_edges = [edge1, edge2, ...]
 
         if not candidate_edges:
             break
@@ -135,12 +137,13 @@ def _get_level_n_edges_by_max_tokens(
     :return: level n edges
     """
     src_id, tgt_id, src_edge_data = src_edge
+    # scr_id: str, tgt_id: str
 
     max_tokens -= (
         src_edge_data["length"]
         + nodes[node_dict[src_id]][1]["length"]
         + nodes[node_dict[tgt_id]][1]["length"]
-    )
+    )  # subtract str, tgt and edge description lengths
 
     level_n_edges = []
 
@@ -206,9 +209,11 @@ def _sort_tuples(er_tuples: list, edge_sampling: str) -> list:
     :param edge_sampling: edge sampling strategy (random, min_loss, max_loss)
     :return: sorted edges
     """
+    # er_tuples = [([node1, node2], edge) for edge in edges] (node_dict is used to retrieve str and tgt nodes)
     if edge_sampling == "random":
         er_tuples = random.sample(er_tuples, len(er_tuples))
     elif edge_sampling == "min_loss":
+        # key is the sum of loss on srt, tgt and edge
         er_tuples = sorted(
             er_tuples,
             key=lambda x: sum(node[1]["loss"] for node in x[0]) + x[1][2]["loss"],
@@ -250,7 +255,10 @@ async def get_batches_with_strategy(  # pylint: disable=too-many-branches
     graph_storage: NetworkXStorage,
     traverse_strategy: Dict,
 ):
-    expand_method = traverse_strategy["expand_method"]
+
+    # edges = [(NODE1_ID, NODE2_ID, {"source_id":"chunk-...<SEP>chunk-", "description":"...<SEP>...", "length":num_tokens}), ...]
+    # nodes = [(NODE_ID, {"entity_type": "..", ""source_id":"chunk-...<SEP>chunk-", "description":"...<SEP>...", "length":num_tokens}), ...]
+    expand_method = traverse_strategy["expand_method"]  # max_tokens or max_width
     if expand_method == "max_width":
         logger.info("Using max width strategy")
     elif expand_method == "max_tokens":
@@ -261,7 +269,7 @@ async def get_batches_with_strategy(  # pylint: disable=too-many-branches
     max_depth = traverse_strategy["max_depth"]
     edge_sampling = traverse_strategy["edge_sampling"]
 
-    # 构建临接矩阵
+    # Construct the proximity matrix
     edge_adj_list = defaultdict(list)
     node_dict = {}
     processing_batches = []
@@ -275,21 +283,27 @@ async def get_batches_with_strategy(  # pylint: disable=too-many-branches
 
     for i, (node_name, _) in enumerate(nodes):
         node_dict[node_name] = i
+    # node_dict = {"NODE0_ID":0, "NODE1_ID":1, ...}
 
     if traverse_strategy["loss_strategy"] == "both":
         er_tuples = [
             ([nodes[node_dict[edge[0]]], nodes[node_dict[edge[1]]]], edge)
             for edge in edges
         ]
+        # er_tuples = [([node1, node2], edge) for edge in edges] (node_dict is used to retrieve str and tgt nodes)
         edges = _sort_tuples(er_tuples, edge_sampling)
+        # edges = [edge1, edge2, ...]
     elif traverse_strategy["loss_strategy"] == "only_edge":
         edges = _sort_edges(edges, edge_sampling)
+        # edges = [edge1, edge2, ...]
     else:
         raise ValueError(f"Invalid loss strategy: {traverse_strategy['loss_strategy']}")
 
     for i, (src, tgt, _) in enumerate(edges):
+        # _ is edge attributes
         edge_adj_list[src].append(i)
         edge_adj_list[tgt].append(i)
+    # edge_adj_list[NODE_ID] = [3, 7, 8] applies node with id NODE_ID is adjacend to edjeces with indices 3,7,8 from edges
 
     for edge in tqdm_async(edges, desc="Preparing batches"):
         if "visited" in edge[2] and edge[2]["visited"]:
@@ -307,12 +321,13 @@ async def get_batches_with_strategy(  # pylint: disable=too-many-branches
             [await get_cached_node_info(src_id), await get_cached_node_info(tgt_id)]
         )
         _process_edges.append(edge)
+        # at this step we have _process_nodes = [node_src, node_tgt], _process_edges = [edge]
 
         if expand_method == "max_width":
             level_n_edges = _get_level_n_edges_by_max_width(
                 edge_adj_list,
-                node_dict,
-                edges,
+                node_dict,  # {"NODE_ID":int, ..}
+                edges, # [edge1, edge2] (already sorted based on edge_sampling)
                 nodes,
                 edge,
                 max_depth,
@@ -340,7 +355,7 @@ async def get_batches_with_strategy(  # pylint: disable=too-many-branches
             _process_nodes.append(await get_cached_node_info(_edge[1]))
             _process_edges.append(_edge)
 
-        # 去重
+        # remove duplicate nodes and edges
         _process_nodes = list(
             {node["node_id"]: node for node in _process_nodes}.values()
         )
@@ -349,6 +364,7 @@ async def get_batches_with_strategy(  # pylint: disable=too-many-branches
         )
 
         processing_batches.append((_process_nodes, _process_edges))
+        # processing_batches = [([node0, node1], [edge1, edge2]), ([..], [..]), ..]
 
     logger.info("Processing batches: %d", len(processing_batches))
 
