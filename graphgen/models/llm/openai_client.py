@@ -14,7 +14,10 @@ from tenacity import (
 from graphgen.bases.base_llm_client import BaseLLMClient
 from graphgen.bases.datatypes import Token
 from graphgen.models.llm.limitter import RPM, TPM
-
+from .client_utils import ApiCostTracker, CacheManager
+from graphgen.utils import logger
+import json
+CALL_LOG_INTERVAL = 10
 
 def get_top_response_tokens(response: openai.ChatCompletion) -> List[Token]:
     token_logprobs = response.choices[0].logprobs.content
@@ -54,6 +57,9 @@ class OpenAIClient(BaseLLMClient):
         self.request_limit = request_limit
         self.rpm = RPM(rpm=6_000)
         self.tpm = TPM(tpm=2_500_000)
+
+        self.api_cost_tracker = ApiCostTracker("Qwen/Qwen2.5-72B", 0.13, 0.40)
+        self.cache_manager = CacheManager("/workspace/hayrapetyan/GraphGen/openai_cache.pkl")
 
         self.__post_init__()
 
@@ -108,9 +114,32 @@ class OpenAIClient(BaseLLMClient):
         kwargs["max_tokens"] = 1
 
         try:
-            completion = await self.client.chat.completions.create(  # pylint: disable=E1125
-                model=self.model_name, **kwargs
-            )
+            key = json.dumps({"model":self.model_name, **kwargs}, ensure_ascii=False, sort_keys=True)
+            if await self.cache_manager.__contains__(key):
+                completion = await self.cache_manager[key]
+            else:
+                completion = await self.client.chat.completions.create(  # pylint: disable=E1125
+                    model=self.model_name, **kwargs
+                )
+                await self.cache_manager.__setitem__(key, completion)
+            if getattr(completion, "error", None):
+                logger.warning(
+                    "OpenAIClient API returned an error: %s", completion.error
+                )
+                return ""
+            await self.api_cost_tracker.track_cost(
+                input_text="\n".join(el["content"] for el in kwargs["messages"]),
+                output_text=completion.choices[0].message.content)
+            if self.api_cost_tracker.num_requests % CALL_LOG_INTERVAL == 0:
+                summary = self.api_cost_tracker.get_summary()
+                logger.info(
+                    "OpenAIClient %s summary after %d calls: total tokens: %d (input), %d (output), total cost: %.6f",
+                    summary["model_name"],
+                    summary["num_requests"],
+                    summary["total_input_tokens"],
+                    summary["total_output_tokens"],
+                    summary["total_cost"],
+                )
         except openai.BadRequestError as err:
             # Handle context overflow due to oversized max_tokens
             msg = str(err)
@@ -152,9 +181,33 @@ class OpenAIClient(BaseLLMClient):
             await self.tpm.wait(estimated_tokens, silent=False)
 
         try:
-            completion = await self.client.chat.completions.create(  # pylint: disable=E1125
-                model=self.model_name, **kwargs
-            )
+            key = json.dumps({"model":self.model_name, **kwargs}, ensure_ascii=False, sort_keys=True)
+            if await self.cache_manager.__contains__(key):
+                completion = await self.cache_manager[key]
+            else:
+                completion = await self.client.chat.completions.create(  # pylint: disable=E1125
+                    model=self.model_name, **kwargs
+                )
+                # тут нужно кэшить только если finish_reasin="stop"
+                await self.cache_manager.__setitem__(key, completion)
+            if getattr(completion, "error", None):
+                logger.warning(
+                    "OpenAIClient API returned an error: %s", completion.error
+                )
+                return ""
+            await self.api_cost_tracker.track_cost(
+                input_text="\n".join(el["content"] for el in kwargs["messages"]),
+                output_text=completion.choices[0].message.content)
+            if self.api_cost_tracker.num_requests % CALL_LOG_INTERVAL == 0:
+                summary = self.api_cost_tracker.get_summary()
+                logger.info(
+                    "OpenAIClient %s summary after %d calls: total tokens: %d (input), %d (output), total cost: %.6f",
+                    summary["model_name"],
+                    summary["num_requests"],
+                    summary["total_input_tokens"],
+                    summary["total_output_tokens"],
+                    summary["total_cost"],
+                )
         except openai.BadRequestError as err:
             # Handle context overflow due to oversized max_tokens
             msg = str(err)
