@@ -17,7 +17,7 @@ from graphgen.models.llm.limitter import RPM, TPM
 from .client_utils import ApiCostTracker, CacheManager
 from graphgen.utils import logger
 import json
-CALL_LOG_INTERVAL = 10
+CALL_LOG_INTERVAL = 200
 
 MODEL_NAME_MAP = {
     "openrouter/qwen/qwen-2.5-72b-instruct" : "openrouter/qwen/qwen-2.5-72b-instruct",

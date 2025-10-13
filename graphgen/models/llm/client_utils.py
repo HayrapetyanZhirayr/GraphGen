@@ -56,8 +56,10 @@ class ApiCostTracker:
 
     async def track_cost(self, input_text: str, output_text: str):
         async with self._lock:
-            input_tokens = self.tokenizer(input_text) if input_text else 0 
-            output_tokens = self.tokenizer(output_text) if output_text else 0
+            # input_tokens = self.tokenizer(input_text) if input_text else 0 
+            # output_tokens = self.tokenizer(output_text) if output_text else 0
+            input_tokens=0
+            output_tokens=0
 
             self.total_input_tokens += input_tokens
             self.total_output_tokens += output_tokens

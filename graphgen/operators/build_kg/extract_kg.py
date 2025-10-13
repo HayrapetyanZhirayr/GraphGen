@@ -65,7 +65,7 @@ async def extract_kg(
             glean_result = await llm_client.generate_answer(
                 text=KG_EXTRACTION_PROMPT[language]["CONTINUE"], history=history
             )
-            logger.info("Loop %s glean: %s", loop_index, glean_result)
+            # logger.info("Loop %s glean: %s", loop_index, glean_result)
 
             history += pack_history_conversations(
                 KG_EXTRACTION_PROMPT[language]["CONTINUE"], glean_result
