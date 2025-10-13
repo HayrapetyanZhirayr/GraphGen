@@ -19,6 +19,11 @@ from graphgen.utils import logger
 import json
 CALL_LOG_INTERVAL = 10
 
+MODEL_NAME_MAP = {
+    "openrouter/qwen/qwen-2.5-72b-instruct" : "openrouter/qwen/qwen-2.5-72b-instruct",
+    "Qwen/Qwen2.5-72B-Instruct" : "openrouter/qwen/qwen-2.5-72b-instruct",
+}
+
 def get_top_response_tokens(response: openai.ChatCompletion) -> List[Token]:
     token_logprobs = response.choices[0].logprobs.content
     tokens = []
@@ -114,7 +119,8 @@ class OpenAIClient(BaseLLMClient):
         kwargs["max_tokens"] = 1
 
         try:
-            key = json.dumps({"model":self.model_name, **kwargs}, ensure_ascii=False, sort_keys=True)
+            model_name = MODEL_NAME_MAP[self.model_name]
+            key = json.dumps({"model":model_name, **kwargs}, ensure_ascii=False, sort_keys=True)
             if await self.cache_manager.__contains__(key):
                 completion = await self.cache_manager[key]
             else:
@@ -181,7 +187,8 @@ class OpenAIClient(BaseLLMClient):
             await self.tpm.wait(estimated_tokens, silent=False)
 
         try:
-            key = json.dumps({"model":self.model_name, **kwargs}, ensure_ascii=False, sort_keys=True)
+            model_name = MODEL_NAME_MAP[self.model_name]
+            key = json.dumps({"model":model_name, **kwargs}, ensure_ascii=False, sort_keys=True)
             if await self.cache_manager.__contains__(key):
                 completion = await self.cache_manager[key]
             else:
