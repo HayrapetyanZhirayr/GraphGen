@@ -6,6 +6,7 @@ from tqdm.asyncio import tqdm as tqdm_async
 from graphgen.models import CommunityDetector, NetworkXStorage, OpenAIClient
 from graphgen.templates import COT_GENERATION_PROMPT, COT_TEMPLATE_DESIGN_PROMPT
 from graphgen.utils import compute_content_hash, detect_main_language
+from graphgen.utils import logger
 
 
 async def generate_cot(
@@ -83,7 +84,10 @@ async def generate_cot(
                 )
                 reasoning_path = cot_template.split("Reasoning-Path Design:")[1].strip()
             else:
-                raise ValueError("COT template format is incorrect.")
+                # raise ValueError("COT template format is incorrect.")
+                logger.warning("COT template format is incorrect.")
+                return c_id, ("", "", "")
+
 
             prompt = COT_GENERATION_PROMPT[language]["TEMPLATE"].format(
                 entities=entities_str,
