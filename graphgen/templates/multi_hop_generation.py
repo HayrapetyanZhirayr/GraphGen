@@ -29,6 +29,9 @@ TEMPLATE_ZH: str = """请基于以下知识子图生成多跳推理问题和答�
 
 TEMPLATE_EN: str = """Please generate a multi-hop reasoning question and answer based on the following knowledge subgraph. You will be provided with a knowledge subgraph that contains a series of entities, relations, and facts. Your task is to generate a question that requires multiple steps of reasoning to answer. The answer to the question should be inferred from the given knowledge subgraph. Ensure that the question is of moderate difficulty and requires multiple steps of reasoning to answer.
 
+-Important-
+Ensure the question is **fully self-contained**, meaning it provides all context necessary for someone with strong knowledge of finance or investment (e.g., a CFA candidate or finance professional) to answer it without any additional information.
+
 For example:
 ########
 --Entities--
