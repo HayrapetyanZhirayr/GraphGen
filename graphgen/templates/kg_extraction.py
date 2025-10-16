@@ -3,7 +3,7 @@
 TEMPLATE_EN: str = """You are an NLP expert, skilled at analyzing text to extract named entities and their relationships.
 
 -Goal-
-Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
+Given a text document that is potentially relevant to finance, investment, or economic analysis, and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
 Use {language} as output language.
 
 -Important-
@@ -60,20 +60,21 @@ Output:
 -Example 2-
 Text:
 #############
-Overall, the analysis of the OsDT11 sequence demonstrated that this protein belongs to the CRP family. Since OsDT11 is predicted to be a secreted protein, the subcellular localization of OsDT11 was determined by fusing the OsDT11 ORF to RFP in a p35S::RFP vector by in vivo protein targeting in NB epidermal cells by performing an Agrobacterium tumefaciens-mediated transient assay. After incubation for 48 h, the RFP signals were mainly detected in the cell-wall of OsDT11-RFP transformed cells, while the control cells (transformed with the RFP construct) displayed ubiquitous RFP signals, demonstrating that OsDT11 is a secreted signal peptide. Moreover, when the infiltrated leaf sections were plasmolyzed, the OsDT11-RFP fusion proteins were located on the cell wall.
+The central bank plays multiple roles in the economy. As the monopoly supplier of currency, it is the only authority that can print money. Acting as banker to the government and to commercial banks, the central bank provides banking services to the government and other banks. It also serves as the lender of last resort by supplying funds to banks facing liquidity shortages to prevent bank runs. The central bank regulates and supervises the payments system, setting standards for millions of daily transactions and coordinating with other central banks globally. One of its most important roles is conducting monetary policy to control the quantity of money and credit in the economy. Additionally, central banks oversee the banking system, including granting licenses for new banks in many countries. They also manage foreign currency and gold reserves; for example, the Reserve Bank of India sold dollars in 2012 to support the Indian rupee when it was under pressure.
 #############
 Output:
-("entity"{tuple_delimiter}"OsDT11"{tuple_delimiter}"gene"{tuple_delimiter}"A protein sequence belonging to the CRP family, demonstrated to be a secreted signal peptide that localizes to cell walls."){record_delimiter}
-("entity"{tuple_delimiter}"CRP family"{tuple_delimiter}"science"{tuple_delimiter}"A protein family to which OsDT11 belongs, characterized by specific structural and functional properties."){record_delimiter}
-("entity"{tuple_delimiter}"RFP"{tuple_delimiter}"technology"{tuple_delimiter}"Red Fluorescent Protein, used as a fusion marker to track protein localization in cells."){record_delimiter}
-("entity"{tuple_delimiter}"p35S::RFP vector"{tuple_delimiter}"technology"{tuple_delimiter}"A genetic construct used for protein expression and visualization studies, containing the 35S promoter and RFP marker."){record_delimiter}
-("entity"{tuple_delimiter}"NB epidermal cells"{tuple_delimiter}"nature"{tuple_delimiter}"Plant epidermal cells used as the experimental system for protein localization studies."){record_delimiter}
-("entity"{tuple_delimiter}"Agrobacterium tumefaciens"{tuple_delimiter}"nature"{tuple_delimiter}"A bacteria species used for transferring genetic material into plant cells in laboratory experiments."){record_delimiter}
-("relationship"{tuple_delimiter}"OsDT11"{tuple_delimiter}"CRP family"{tuple_delimiter}"OsDT11 is identified as a member of the CRP family through sequence analysis."){record_delimiter}
-("relationship"{tuple_delimiter}"OsDT11"{tuple_delimiter}"RFP"{tuple_delimiter}"OsDT11 was fused to RFP to study its cellular localization."){record_delimiter}
-("relationship"{tuple_delimiter}"Agrobacterium tumefaciens"{tuple_delimiter}"NB epidermal cells"{tuple_delimiter}"Agrobacterium tumefaciens was used to transfer genetic material into NB epidermal cells through a transient assay."){record_delimiter}
-("relationship"{tuple_delimiter}"OsDT11"{tuple_delimiter}"NB epidermal cells"{tuple_delimiter}"OsDT11's subcellular localization was studied in NB epidermal cells, showing cell wall targeting."){record_delimiter}
-("content_keywords"{tuple_delimiter}"protein localization, gene expression, cellular biology, molecular techniques"){completion_delimiter}
+("entity"{tuple_delimiter}"Central Bank"{tuple_delimiter}"organization"{tuple_delimiter}"The primary monetary authority in a country responsible for issuing currency, regulating the banking system, conducting monetary policy, and managing reserves."){record_delimiter}
+("entity"{tuple_delimiter}"Currency"{tuple_delimiter}"financial_instrument"{tuple_delimiter}"Legal tender issued and controlled by the central bank, used as a medium of exchange."){record_delimiter}
+("entity"{tuple_delimiter}"Government"{tuple_delimiter}"organization"{tuple_delimiter}"National or federal government that interacts with the central bank for banking services and policy implementation."){record_delimiter}
+("entity"{tuple_delimiter}"Commercial Banks"{tuple_delimiter}"organization"{tuple_delimiter}"Private or public banks that receive services from the central bank and may access funds in times of shortage."){record_delimiter}
+("entity"{tuple_delimiter}"Monetary Policy"{tuple_delimiter}"concept"{tuple_delimiter}"Actions taken by the central bank to influence the money supply and credit conditions in the economy."){record_delimiter}
+("entity"{tuple_delimiter}"Reserve Bank of India (RBI)"{tuple_delimiter}"organization"{tuple_delimiter}"Example of a central bank that manages currency and foreign exchange reserves, influencing its domestic currency."){record_delimiter}
+("relationship"{tuple_delimiter}"Central Bank"{tuple_delimiter}"Currency"{tuple_delimiter}"Central bank is the monopoly issuer of currency."){record_delimiter}
+("relationship"{tuple_delimiter}"Central Bank"{tuple_delimiter}"Government"{tuple_delimiter}"Provides banking services to the government and facilitates government financial operations."){record_delimiter}
+("relationship"{tuple_delimiter}"Central Bank"{tuple_delimiter}"Commercial Banks"{tuple_delimiter}"Acts as lender of last resort to commercial banks facing liquidity shortages."){record_delimiter}
+("relationship"{tuple_delimiter}"Central Bank"{tuple_delimiter}"Monetary Policy"{tuple_delimiter}"Conducts monetary policy to regulate money supply and credit in the economy."){record_delimiter}
+("relationship"{tuple_delimiter}"Reserve Bank of India (RBI)"{tuple_delimiter}"Currency"{tuple_delimiter}"RBI sold foreign currency reserves to support the domestic currency."){record_delimiter}
+("content_keywords"{tuple_delimiter}"central banking, monetary policy, liquidity management, currency issuance, financial regulation"){completion_delimiter}
 
 ################
 -Real Data-
@@ -207,8 +208,8 @@ KG_EXTRACTION_PROMPT: dict = {
         "tuple_delimiter": "<|>",
         "record_delimiter": "##",
         "completion_delimiter": "<|COMPLETE|>",
-        "entity_types": "concept, date, location, keyword, organization, person, event, work, nature, artificial, \
-science, technology, mission, gene",
+        "entity_types": "concept, financial_instrument, regulation, standard, organization, person, event, market, \
+metric, company, country, economic_indicator, report, strategy",
         "language": "English",
     },
 }
