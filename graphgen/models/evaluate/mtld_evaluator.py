@@ -11,7 +11,7 @@ nltk_helper = NLTKHelper()
 @dataclass
 class MTLDEvaluator(BaseEvaluator):
     """
-    衡量文本词汇多样性的指标
+    Показатели для измерения разнообразия текстовой лексики
     """
 
     stopwords_en: Set[str] = field(
@@ -27,7 +27,7 @@ class MTLDEvaluator(BaseEvaluator):
 
     def _calculate_mtld_score(self, text: str, threshold=0.72) -> float:
         """
-        计算MTLD (向前和向后的平均值)
+        расчет MTLD (Среднее значение прямого и обратного)
 
         min is 1.0
         higher is better
@@ -45,13 +45,13 @@ class MTLDEvaluator(BaseEvaluator):
         if not filtered_tokens:
             return 0
 
-        # 计算向前的MTLD
+        # forward MTLD
         forward_factors = self._compute_factors(filtered_tokens, threshold)
 
-        # 计算向后的MTLD
+        # backward MTLD
         backward_factors = self._compute_factors(filtered_tokens[::-1], threshold)
 
-        # 取平均值
+        # average forward + backward
         return (forward_factors + backward_factors) / 2
 
     @staticmethod
@@ -70,7 +70,7 @@ class MTLDEvaluator(BaseEvaluator):
                 current_segment = []
                 unique_words = set()
 
-        # 处理最后一个不完整片段
+        # last fragment
         if current_segment:
             ttr = len(unique_words) / len(current_segment)
             if ttr <= threshold:

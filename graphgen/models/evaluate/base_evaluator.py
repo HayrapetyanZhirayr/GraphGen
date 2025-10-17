@@ -21,16 +21,18 @@ class BaseEvaluator:
     async def async_evaluate(self, pairs: list[QAPair]) -> list[float]:
         semaphore = asyncio.Semaphore(self.max_concurrent)
 
-        async def evaluate_with_semaphore(pair):
+        async def evaluate_with_semaphore(pair, index):
             async with semaphore:  # 获取Semaphore
-                return await self.evaluate_single(pair)
+                result = await self.evaluate_single(pair)
+            return index, result
 
-        results = []
+        results = [None]*len(pairs)
         for result in tqdm_async(
-            asyncio.as_completed([evaluate_with_semaphore(pair) for pair in pairs]),
+            asyncio.as_completed([evaluate_with_semaphore(pair, index) for index, pair in enumerate(pairs)]),
             total=len(pairs),
         ):
-            results.append(await result)
+            index, result = await result
+            results[index] = result
         return results
 
     async def evaluate_single(self, pair: QAPair) -> float:

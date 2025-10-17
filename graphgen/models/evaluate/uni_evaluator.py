@@ -122,6 +122,8 @@ class UniEvaluator:
                 if i == self.num_gpus - 1:
                     end = len(pairs)
                 chunks.append(pairs[start:end])
+            
+            # we have chunks for certain dimension only
 
             # multi-process
             manager = mp.Manager()

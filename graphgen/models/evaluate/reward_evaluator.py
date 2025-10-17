@@ -78,7 +78,6 @@ class RewardEvaluator:
         for p in processes:
             p.join()
 
-        # 合并结果
         results = []
         for rank in range(len(chunks)):
             results.extend(return_dict[rank])
