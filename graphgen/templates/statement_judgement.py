@@ -5,8 +5,7 @@ Note:
 2. The answer should be either 'yes' or 'no', do not output any other content.
 
 Statement:
-{statement}
-Judgement: """
+{statement} /no_think"""
 
 STATEMENT_JUDGEMENT_PROMPT = {
     "TEMPLATE": TEMPLATE

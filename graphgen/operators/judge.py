@@ -63,7 +63,7 @@ async def judge_statement(  # pylint: disable=too-many-statements
 
                 loss = yes_no_loss_entropy(judgements, gts)
 
-                logger.info(
+                logger.debug(
                     "Edge %s -> %s description: %s loss: %s",
                     source_id,
                     target_id,
@@ -73,6 +73,7 @@ async def judge_statement(  # pylint: disable=too-many-statements
 
                 edge_data["loss"] = loss
             except Exception as e:  # pylint: disable=broad-except
+                raise
                 logger.error(
                     "Error in judging relation %s -> %s: %s", source_id, target_id, e
                 )

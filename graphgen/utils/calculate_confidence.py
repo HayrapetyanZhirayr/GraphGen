@@ -53,12 +53,13 @@ def yes_no_loss_entropy(
     tokens_list: List[List[Token]], ground_truth: List[str]
 ) -> float:
     """Calculate the loss for yes/no question using entropy."""
+    EPS = 1e-9
     losses = []
     for i, tokens in enumerate(tokens_list):
         token = tokens[0]
-        assert token.text.lower() in ["yes", "no"]
+        assert token.text.lower() in ["yes", "no"], f"Unexpected token: {token.text!r}"
         if token.text == ground_truth[i]:
             losses.append(-math.log(token.prob))
         else:
-            losses.append(-math.log(1 - token.prob))
+            losses.append(-math.log(1 - token.prob + EPS))
     return sum(losses) / len(losses)

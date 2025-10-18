@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import Dict, cast
 
 import gradio as gr
-
 from graphgen.bases.base_storage import StorageNameSpace
 from graphgen.bases.datatypes import Chunk
 from graphgen.models import (
@@ -14,6 +13,7 @@ from graphgen.models import (
     NetworkXStorage,
     OpenAIClient,
     Tokenizer,
+    CacheManager,
 )
 from graphgen.operators import (
     chunk_documents,
@@ -62,15 +62,17 @@ class GraphGen:
                 api_key=os.getenv("SYNTHESIZER_API_KEY"),
                 base_url=os.getenv("SYNTHESIZER_BASE_URL"),
                 tokenizer=self.tokenizer_instance,
+                cache_manager = CacheManager("/workspace/hayrapetyan/GraphGen/openai_cache.pkl")
             )
         )
-
         self.trainee_llm_client: OpenAIClient = self.trainee_llm_client or OpenAIClient(
             model_name=os.getenv("TRAINEE_MODEL"),
             api_key=os.getenv("TRAINEE_API_KEY"),
             base_url=os.getenv("TRAINEE_BASE_URL"),
             tokenizer=self.tokenizer_instance,
+            cache_manager=CacheManager("/workspace/hayrapetyan/GraphGen/openai_cache_trainee.pkl"),
         )
+        logger.info("LLM Clients are Initialized")
 
         self.full_docs_storage: JsonKVStorage = JsonKVStorage(
             self.working_dir, namespace="full_docs"

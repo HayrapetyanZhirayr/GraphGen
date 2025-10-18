@@ -17,12 +17,43 @@ from graphgen.models.llm.limitter import RPM, TPM
 from .client_utils import ApiCostTracker, CacheManager
 from graphgen.utils import logger
 import json
-CALL_LOG_INTERVAL = 200
+CALL_LOG_INTERVAL = 20_000
 
 MODEL_NAME_MAP = {
     "openrouter/qwen/qwen-2.5-72b-instruct" : "openrouter/qwen/qwen-2.5-72b-instruct",
     "Qwen/Qwen2.5-72B-Instruct" : "openrouter/qwen/qwen-2.5-72b-instruct",
+    
+    "Qwen/Qwen3-1.7B" : "openrouter/qwen/qwen3-1.7b",
+    "openrouter/qwen/qwen3-1.7b" : "openrouter/qwen/qwen3-1.7b",
+
+    "Qwen/Qwen3-14B" : "openrouter/qwen/qwen3-14b",
+    "openrouter/qwen/qwen3-14b" : "openrouter/qwen/qwen3-14b",
+    
+    "Qwen/Qwen3-4B-Base" : "Qwen/Qwen3-4B-Base",
 }
+
+def get_top_response_tokens_v2(response: openai.ChatCompletion) -> List[Token]:
+    token_logprobs = response.choices[0].logprobs.content
+    tokens = []
+    for index, token_prob in enumerate(token_logprobs):
+        prob = math.exp(token_prob.logprob)
+        token = token_prob.token
+        is_space_token = not token.strip()
+        if token in ["<think>", "</think>"] or is_space_token:
+            continue
+        candidate_tokens = [
+            Token(t.token, math.exp(t.logprob)) for t in token_prob.top_logprobs
+        ]
+        token = Token(token_prob.token, prob, top_candidates=candidate_tokens)
+        tokens.append(token)
+    if len(tokens) == 0:
+        candidate_tokens = [
+            Token(t.token, math.exp(t.logprob)) for t in token_prob.top_logprobs
+        ]
+        token = Token(token_prob.token, prob, top_candidates=candidate_tokens)
+        tokens.append(token)
+    return tokens
+            
 
 def get_top_response_tokens(response: openai.ChatCompletion) -> List[Token]:
     token_logprobs = response.choices[0].logprobs.content
@@ -48,6 +79,7 @@ class OpenAIClient(BaseLLMClient):
         seed: Optional[int] = None,
         topk_per_token: int = 5,  # number of topk tokens to generate for each token
         request_limit: bool = False,
+        cache_manager = {},
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -64,7 +96,7 @@ class OpenAIClient(BaseLLMClient):
         self.tpm = TPM(tpm=2_500_000)
 
         self.api_cost_tracker = ApiCostTracker("Qwen/Qwen2.5-72B", 0.13, 0.40)
-        self.cache_manager = CacheManager("/workspace/hayrapetyan/GraphGen/openai_cache.pkl")
+        self.cache_manager = cache_manager
 
         self.__post_init__()
 
@@ -116,7 +148,7 @@ class OpenAIClient(BaseLLMClient):
             kwargs["top_logprobs"] = self.topk_per_token
 
         # Limit max_tokens to 1 to avoid long completions
-        kwargs["max_tokens"] = 1
+        kwargs["max_tokens"] = 5
 
         try:
             model_name = MODEL_NAME_MAP[self.model_name]
@@ -158,7 +190,7 @@ class OpenAIClient(BaseLLMClient):
             else:
                 raise
 
-        tokens = get_top_response_tokens(completion)
+        tokens = get_top_response_tokens_v2(completion)
 
         return tokens
 
