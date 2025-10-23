@@ -1,5 +1,5 @@
 """Evaluate the quality of the generated text using various metrics"""
-
+import pandas as pd
 import argparse
 import json
 import os
@@ -90,8 +90,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
+
     parser.add_argument(
-        "--folder", type=str, default="cache/data", help="folder to load data"
+        "--input", type=str, default="cache/data", help="folder to load data"
     )
     parser.add_argument(
         "--output", type=str, default="cache/output", help="path to save output"
@@ -112,61 +113,78 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if not os.path.exists(args.folder):
-        raise ValueError(f"Folder {args.folder} does not exist")
+    # if not os.path.exists(args.folder):
+    #     raise ValueError(f"Folder {args.folder} does not exist")
 
-    if not os.path.exists(args.output):
-        os.makedirs(args.output)
+    # if not os.path.exists(args.output):
+    #     os.makedirs(args.output)
 
     reward_models = args.reward.split(",")
 
     results = []
 
-    logger.info("Data loaded from %s", args.folder)
+    # logger.info("Data loaded from %s", args.folder)
     mp.set_start_method("spawn")
 
-    for file in os.listdir(args.folder):
-        if file.endswith(".json"):
-            logger.info("Processing %s", file)
-            with open(os.path.join(args.folder, file), "r", encoding="utf-8") as f:
-                data = json.load(f)
-            data = [
-                QAPair(question=data[key]["question"], answer=data[key]["answer"])
-                for key in data
-            ]
 
-            length_scores = evaluate_length(data, args.tokenizer)
-            mtld_scores, min_max_mtld_scores = evaluate_mtld(data)
-            reward_scores = evaluate_reward(data, reward_models)
-            (
-                uni_naturalness_scores,
-                uni_coherence_scores,
-                uni_understandability_scores,
-                min_max_uni_naturalness_scores,
-                min_max_uni_coherence_scores,
-                min_max_uni_understandability_scores,
-            ) = evaluate_uni(data, args.uni)
+    # for file in os.listdir(args.folder):
+    #     if file.endswith(".json"):
+    #         logger.info("Processing %s", file)
+    #         with open(os.path.join(args.folder, file), "r", encoding="utf-8") as f:
+    #             data = json.load(f)
+    # df = pd.read_json(args.input, lines=True)[:100]
+    df = pd.read_json(args.input, lines=True)
 
-            result = {
-                "file": file,
-                "number": len(data),
-                "length": length_scores,
-                "mtld": mtld_scores,
-                "mtld_min_max": min_max_mtld_scores,
-                "uni_naturalness": uni_naturalness_scores,
-                "uni_coherence": uni_coherence_scores,
-                "uni_understandability": uni_understandability_scores,
-                "uni_naturalness_min_max": min_max_uni_naturalness_scores,
-                "uni_coherence_min_max": min_max_uni_coherence_scores,
-                "uni_understandability_min_max": min_max_uni_understandability_scores,
-            }
-            for reward_score in reward_scores:
-                result[reward_score["reward_name"]] = reward_score["score"]
-                result[f"{reward_score['reward_name']}_min_max"] = reward_score[
-                    "min_max_scores"
-                ]
+    data = [
+        QAPair(question=e["instruction"], answer=e["output"])
+        for _, e in df.iterrows()
+    ]
+    # data = [
+    #     QAPair(question=data[key]["question"], answer=data[key]["answer"])
+    #     for key in data
+    # ]
 
-            results.append(result)
+    # length_scores = evaluate_length(data, args.tokenizer)
+    # df[f"{args.tokenizer}_length"] = length_scores
+    # mtld_scores, min_max_mtld_scores = evaluate_mtld(data)
+    # df["mtld_scores"] = mtld_scores
+    # reward_scores = evaluate_reward(data, reward_models)
+    (
+        uni_naturalness_scores,
+        uni_coherence_scores,
+        uni_understandability_scores,
+        min_max_uni_naturalness_scores,
+        min_max_uni_coherence_scores,
+        min_max_uni_understandability_scores,
+    ) = evaluate_uni(data, args.uni)
+    df["naturalness"] = uni_naturalness_scores
+    df["coherence"] = uni_coherence_scores
+    df["understandability"] = uni_understandability_scores
 
-    results = pd.DataFrame(results)
-    results.to_csv(os.path.join(args.output, "evaluation.csv"), index=False)
+
+    # result = {
+    #     "file": file,
+    #     "number": len(data),
+    #     "length": length_scores,
+    #     "mtld": mtld_scores,
+    #     "mtld_min_max": min_max_mtld_scores,
+    #     "uni_naturalness": uni_naturalness_scores,
+    #     "uni_coherence": uni_coherence_scores,
+    #     "uni_understandability": uni_understandability_scores,
+    #     "uni_naturalness_min_max": min_max_uni_naturalness_scores,
+    #     "uni_coherence_min_max": min_max_uni_coherence_scores,
+    #     "uni_understandability_min_max": min_max_uni_understandability_scores,
+    # }
+    for reward_score in reward_scores:
+        df[reward_score["reward_name"]] = reward_score["score"]
+        # result[f"{reward_score['reward_name']}_min_max"] = reward_score[
+        #     "min_max_scores"
+        # ]
+
+    # results.append(result)
+
+# results = pd.DataFrame(results)
+    df.to_json(
+        args.output, lines=True, orient="records"
+    )
+# results.to_csv(os.path.join(args.output, "evaluation.csv"), index=False)
